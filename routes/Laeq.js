@@ -7,7 +7,8 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    let query = "SELECT * FROM tbl_laeq";
+    let query = "SELECT * FROM laeq";
+  
     const params = [];
 
     // Build query with filters
@@ -54,7 +55,7 @@ router.get("/", async (req, res) => {
       }
       
       // Validate laeq field
-      formattedRow.laeq = formattedRow.laeq !== null && formattedRow.laeq !== undefined ? formattedRow.laeq : 0;
+      formattedRow.value = formattedRow.value !== null && formattedRow.value !== undefined ? formattedRow.value : 0;
       
       return formattedRow;
     });

@@ -7,7 +7,7 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    let query = "SELECT * FROM laeq_hourly";
+    let query = "SELECT * FROM laeq_lmin_lmax";
     const params = [];
 
     // Build query with filters
@@ -60,8 +60,8 @@ router.get("/", async (req, res) => {
     
     res.status(200).json(mappedRows);
   } catch (error) {
-    console.error("Error fetching LAeq hourly data:", error);
-    res.status(500).json({ error: "Failed to fetch LAeq hourly data" });
+    console.error("Error fetching LAeq lmin lmax data:", error);
+    res.status(500).json({ error: "Failed to fetch LAeq lmin lmax data" });
   }
 });
 

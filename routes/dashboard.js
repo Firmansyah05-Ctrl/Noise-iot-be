@@ -8,10 +8,10 @@ router.get("/", async (req, res) => {
     // Run all queries in parallel using Promise.all for better performance
     const [latestLaeqResult, mqttStatusResult, latestHourlyResult, 
            latestRealtimeResult, todayStatsResult] = await Promise.all([
-      pool.execute("SELECT * FROM tbl_laeq ORDER BY created_at DESC LIMIT 1"),
+      pool.execute("SELECT * FROM laeq ORDER BY created_at DESC LIMIT 1"),
       pool.execute("SELECT * FROM mqtt_status ORDER BY updated_at DESC LIMIT 1"),
-      pool.execute("SELECT * FROM laeq_hourly ORDER BY created_at DESC LIMIT 1"),
-      pool.execute("SELECT * FROM laeq_realtime ORDER BY created_at DESC LIMIT 1"),
+      pool.execute("SELECT * FROM laeq_lmin_lmax ORDER BY created_at DESC LIMIT 1"),
+      pool.execute("SELECT * FROM laeq_metrics ORDER BY created_at DESC LIMIT 1"),
       pool.execute("SELECT MAX(laeq) as maxLaeq, MIN(laeq) as minLaeq, AVG(laeq) as avgLaeq FROM tbl_laeq WHERE created_at >= ?", 
         [new Date().setHours(0, 0, 0, 0)])
     ]);

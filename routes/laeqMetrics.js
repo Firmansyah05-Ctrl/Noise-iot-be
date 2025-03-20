@@ -7,7 +7,7 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    let query = "SELECT * FROM laeq_realtime";
+    let query = "SELECT * FROM laeq_metrics";
     const params = [];
 
     // Build query with filters
