@@ -12,7 +12,7 @@ router.get("/", async (req, res) => {
       pool.execute("SELECT * FROM mqtt_status ORDER BY updated_at DESC LIMIT 1"),
       pool.execute("SELECT * FROM laeq_lmin_lmax ORDER BY created_at DESC LIMIT 1"),
       pool.execute("SELECT * FROM laeq_metrics ORDER BY created_at DESC LIMIT 1"),
-      pool.execute("SELECT MAX(laeq) as maxLaeq, MIN(laeq) as minLaeq, AVG(laeq) as avgLaeq FROM tbl_laeq WHERE created_at >= ?", 
+      pool.execute("SELECT MAX(laeq) as maxLaeq, MIN(laeq) as minLaeq, AVG(laeq) as avgLaeq FROM laeq WHERE created_at >= ?", 
         [new Date().setHours(0, 0, 0, 0)])
     ]);
 
