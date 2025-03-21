@@ -1,4 +1,3 @@
-// routes/laeqRealtime.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
@@ -7,7 +6,9 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    let query = "SELECT * FROM laeq_metrics";
+    // Fixed the query to properly alias the converted timezone field
+    let query =
+      "SELECT *, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_metrics";
     const params = [];
 
     // Build query with filters
@@ -45,7 +46,7 @@ router.get("/", async (req, res) => {
 
     // Map field names and format date
     const mappedRows = rows.map((row) => {
-      // Format the date for updated_at
+      // Format the date for created_at
       const date = new Date(row.created_at);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -54,12 +55,12 @@ router.get("/", async (req, res) => {
       const minutes = String(date.getMinutes()).padStart(2, "0");
       const seconds = String(date.getSeconds()).padStart(2, "0");
 
-      // Format updated_at as requested
+      // Format created_at as requested and handle null values
       const formattedRow = {
         ...row,
-        L10: row.L10 || 0,
-        L50: row.L50 || 0,
-        L90: row.L90 || 0,
+        L10: row.L10 !== null && row.L10 !== undefined ? row.L10 : 0,
+        L50: row.L50 !== null && row.L50 !== undefined ? row.L50 : 0,
+        L90: row.L90 !== null && row.L90 !== undefined ? row.L90 : 0,
       };
 
       formattedRow.created_at = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;

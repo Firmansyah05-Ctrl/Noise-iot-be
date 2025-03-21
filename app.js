@@ -10,6 +10,7 @@ const laeqRealtimeRoutes = require("./routes/laeqMetrics");
 const mqttStatusRoutes = require("./routes/mqttStatus");
 const tblLaeqRoutes = require("./routes/Laeq");
 const dashboardRoutes = require("./routes/dashboard");
+const laeqHourlyRoutesNew = require("./routes/laeqHourly");
 
 // Load environment variables
 dotenv.config();
@@ -27,5 +28,6 @@ app.use("/api/laeq-metrics", laeqRealtimeRoutes);
 app.use("/api/mqtt-status", mqttStatusRoutes);
 app.use("/api/laeq", tblLaeqRoutes);
 app.use("/api/dashboard-summary", dashboardRoutes);
+app.use("/api/laeq-hourly", laeqHourlyRoutesNew);
 
 module.exports = app;

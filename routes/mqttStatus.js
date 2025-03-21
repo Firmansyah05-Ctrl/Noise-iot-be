@@ -6,8 +6,9 @@ router.get("/", async (req, res) => {
   try {
     const { limit, status, sort } = req.query;
 
-    // Build the query with potential filters
-    let query = "SELECT * FROM mqtt_status";
+    // Build the query with potential filters and fixed timezone conversion
+    let query =
+      "SELECT *, CONVERT_TZ(updated_at, '+00:00', '+08:00') as updated_at FROM mqtt_status";
     const params = [];
 
     // Create conditions array for multiple WHERE clauses

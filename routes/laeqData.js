@@ -1,4 +1,3 @@
-// routes/laeqData.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
@@ -7,7 +6,9 @@ router.get("/", async (req, res) => {
   try {
     const { type, limit, startDate, endDate } = req.query;
 
-    let query = "SELECT * FROM laeq_data";
+    // Fixed query with proper alias for the converted timestamp
+    let query =
+      "SELECT *, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_data";
     const params = [];
 
     // Build query with filters

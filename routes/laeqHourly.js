@@ -6,16 +6,15 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    // Base query with timezone conversion for created_at (+8 hours)
+    // Base query with columns specified to match the requested SQL query
     let query =
-      "SELECT *, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq";
-
+      "SELECT value as laeq, type, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_data";
     const params = [];
 
-    // Build query with filters
-    const conditions = [];
+    // Build query with filters - start with the required type filter
+    const conditions = ["type = '1h'"];
 
-    // Add default 24-hour filter if no startDate is provided
+    // Add date range filters if provided
     if (startDate) {
       conditions.push("created_at >= ?");
       params.push(new Date(startDate));
@@ -32,12 +31,13 @@ router.get("/", async (req, res) => {
       params.push(new Date(endDate));
     }
 
-    if (conditions.length) {
-      query += " WHERE " + conditions.join(" AND ");
-    }
+    // Add WHERE clause with all conditions
+    query += " WHERE " + conditions.join(" AND ");
 
+    // Add ordering
     query += " ORDER BY created_at DESC";
 
+    // Add limit if provided
     if (limit) {
       query += " LIMIT ?";
       params.push(parseInt(limit));
@@ -45,11 +45,9 @@ router.get("/", async (req, res) => {
 
     const [rows] = await pool.execute(query, params);
 
-    // Format date and add validation
+    // Format the created_at timestamp for each row
     const formattedRows = rows.map((row) => {
       const formattedRow = { ...row };
-
-      // Format created_at in the desired format: YYYY-MM-DD HH:MM:SS
       if (formattedRow.created_at) {
         const date = new Date(formattedRow.created_at);
         const year = date.getFullYear();
@@ -61,20 +59,13 @@ router.get("/", async (req, res) => {
 
         formattedRow.created_at = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
       }
-
-      // Validate laeq field
-      formattedRow.value =
-        formattedRow.value !== null && formattedRow.value !== undefined
-          ? formattedRow.value
-          : 0;
-
       return formattedRow;
     });
 
     res.status(200).json(formattedRows);
   } catch (error) {
-    console.error("Error fetching LAeq table data:", error);
-    res.status(500).json({ error: "Failed to fetch LAeq table data" });
+    console.error("Error fetching LAeq data:", error);
+    res.status(500).json({ error: "Failed to fetch LAeq data" });
   }
 });
 

@@ -1,4 +1,3 @@
-// routes/laeqHourly.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
@@ -7,7 +6,9 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    let query = "SELECT * FROM laeq_lmin_lmax";
+    // Fixed query with proper alias for the converted timestamp
+    let query =
+      "SELECT *, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_lmin_lmax";
     const params = [];
 
     // Build query with filters
@@ -55,9 +56,10 @@ router.get("/", async (req, res) => {
 
       const formattedRow = {
         ...row,
-        laeq1h: row.laeq1h || 0,
-        Lmax: row.Lmax || 0,
-        Lmin: row.Lmin || 0,
+        laeq1h:
+          row.laeq1h !== null && row.laeq1h !== undefined ? row.laeq1h : 0,
+        Lmax: row.Lmax !== null && row.Lmax !== undefined ? row.Lmax : 0,
+        Lmin: row.Lmin !== null && row.Lmin !== undefined ? row.Lmin : 0,
       };
 
       formattedRow.created_at = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
