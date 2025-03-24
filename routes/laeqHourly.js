@@ -6,7 +6,7 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
-    // Base query with columns specified to match the requested SQL query
+    // Base query with columns specified
     let query =
       "SELECT value as laeq, type, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_data";
     const params = [];
@@ -18,8 +18,8 @@ router.get("/", async (req, res) => {
     if (startDate) {
       conditions.push("created_at >= ?");
       params.push(new Date(startDate));
-    } else {
-      // Filter for the last 24 hours
+    } else if (!limit) {
+      // Filter for the last 24 hours if no limit and no startDate specified
       const twentyFourHoursAgo = new Date();
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
       conditions.push("created_at >= ?");
@@ -37,11 +37,10 @@ router.get("/", async (req, res) => {
     // Add ordering
     query += " ORDER BY created_at DESC";
 
-    // Add limit if provided
-    if (limit) {
-      query += " LIMIT ?";
-      params.push(parseInt(limit));
-    }
+    // Set default limit to 24 if not specified
+    const finalLimit = limit ? parseInt(limit) : 24;
+    query += " LIMIT ?";
+    params.push(finalLimit);
 
     const [rows] = await pool.execute(query, params);
 
