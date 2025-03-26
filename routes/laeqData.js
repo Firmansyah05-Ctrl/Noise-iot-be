@@ -4,26 +4,22 @@ const pool = require("../config/db");
 
 router.get("/", async (req, res) => {
   try {
-    const { type, limit, startDate, endDate } = req.query;
+    const { limit, startDate, endDate } = req.query;
 
-    // Fixed query with proper alias for the converted timestamp
+    // Base query with columns specified
     let query =
-      "SELECT *, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_data";
+      "SELECT value as laeq, type, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_data";
     const params = [];
 
-    // Build query with filters
-    const conditions = [];
-    if (type) {
-      conditions.push("type = ?");
-      params.push(type);
-    }
+    // Build query with filters - start with the required type filter
+    const conditions = ["type = '1m'"];
 
-    // Add default 24-hour filter if no startDate is provided
+    // Add date range filters if provided
     if (startDate) {
       conditions.push("created_at >= ?");
       params.push(new Date(startDate));
-    } else {
-      // Filter for the last 24 hours
+    } else if (!limit) {
+      // Filter for the last 24 hours if no limit and no startDate specified
       const twentyFourHoursAgo = new Date();
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
       conditions.push("created_at >= ?");
@@ -35,16 +31,16 @@ router.get("/", async (req, res) => {
       params.push(new Date(endDate));
     }
 
-    if (conditions.length) {
-      query += " WHERE " + conditions.join(" AND ");
-    }
+    // Add WHERE clause with all conditions
+    query += " WHERE " + conditions.join(" AND ");
 
+    // Add ordering
     query += " ORDER BY created_at DESC";
 
-    if (limit) {
-      query += " LIMIT ?";
-      params.push(parseInt(limit));
-    }
+    // Set default limit to 60 for minute data
+    const finalLimit = limit ? parseInt(limit) : 60;
+    query += " LIMIT ?";
+    params.push(finalLimit);
 
     const [rows] = await pool.execute(query, params);
 
