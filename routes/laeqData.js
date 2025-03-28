@@ -6,6 +6,19 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
+    // First, find the most recent timestamp in the database for 1m data
+    const [latestRow] = await pool.execute(
+      "SELECT created_at FROM laeq_data WHERE type = '1m' ORDER BY created_at DESC LIMIT 1"
+    );
+
+    if (!latestRow || latestRow.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const latestTimestamp = new Date(latestRow[0].created_at);
+    const twentyFourHoursAgo = new Date(latestTimestamp);
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
     // Base query with columns specified
     let query =
       "SELECT value as laeq, type, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq_data";
@@ -14,14 +27,11 @@ router.get("/", async (req, res) => {
     // Build query with filters - start with the required type filter
     const conditions = ["type = '1m'"];
 
-    // Add date range filters if provided
+    // Use custom date range if provided, otherwise use last 24 hours from latest data
     if (startDate) {
       conditions.push("created_at >= ?");
       params.push(new Date(startDate));
-    } else if (!limit) {
-      // Filter for the last 24 hours if no limit and no startDate specified
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    } else {
       conditions.push("created_at >= ?");
       params.push(twentyFourHoursAgo);
     }
@@ -29,6 +39,9 @@ router.get("/", async (req, res) => {
     if (endDate) {
       conditions.push("created_at <= ?");
       params.push(new Date(endDate));
+    } else {
+      conditions.push("created_at <= ?");
+      params.push(latestTimestamp);
     }
 
     // Add WHERE clause with all conditions
@@ -37,7 +50,7 @@ router.get("/", async (req, res) => {
     // Add ordering
     query += " ORDER BY created_at DESC";
 
-    // Set default limit to 60 for minute data
+    // Set default limit to 60 for minute data if not specified
     const finalLimit = limit ? parseInt(limit) : 60;
     query += " LIMIT ?";
     params.push(finalLimit);
@@ -64,7 +77,10 @@ router.get("/", async (req, res) => {
     res.status(200).json(formattedRows);
   } catch (error) {
     console.error("Error fetching LAeq data:", error);
-    res.status(500).json({ error: "Failed to fetch LAeq data" });
+    res.status(500).json({
+      error: "Failed to fetch LAeq data",
+      details: error.message,
+    });
   }
 });
 

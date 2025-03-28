@@ -6,23 +6,31 @@ router.get("/", async (req, res) => {
   try {
     const { limit, startDate, endDate } = req.query;
 
+    // First, find the most recent timestamp in the database
+    const [latestRow] = await pool.execute(
+      "SELECT created_at FROM laeq ORDER BY created_at DESC LIMIT 1"
+    );
+
+    if (!latestRow || latestRow.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const latestTimestamp = new Date(latestRow[0].created_at);
+    const twentyFourHoursAgo = new Date(latestTimestamp);
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
     // Base query with timezone conversion for created_at (+8 hours)
     let query =
       "SELECT *, CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at FROM laeq";
 
     const params = [];
-
-    // Build query with filters
     const conditions = [];
 
-    // Add default 24-hour filter if no startDate is provided
+    // Use custom date range if provided, otherwise use last 24 hours from latest data
     if (startDate) {
       conditions.push("created_at >= ?");
       params.push(new Date(startDate));
     } else {
-      // Filter for the last 24 hours
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
       conditions.push("created_at >= ?");
       params.push(twentyFourHoursAgo);
     }
@@ -30,6 +38,9 @@ router.get("/", async (req, res) => {
     if (endDate) {
       conditions.push("created_at <= ?");
       params.push(new Date(endDate));
+    } else {
+      conditions.push("created_at <= ?");
+      params.push(latestTimestamp);
     }
 
     if (conditions.length) {
