@@ -3,11 +3,15 @@ const router = express.Router();
 const pool = require("../config/db");
 
 router.get("/", async (req, res) => {
+  let connection;
   try {
     const { limit, startDate, endDate } = req.query;
 
+    // Dapatkan koneksi dari pool terlebih dahulu
+    connection = await pool.getConnection();
+
     // First, find the most recent timestamp in the database
-    const [latestRow] = await pool.execute(
+    const [latestRow] = await connection.execute(
       "SELECT created_at FROM laeq_lmin_lmax ORDER BY created_at DESC LIMIT 1"
     );
 
@@ -53,7 +57,7 @@ router.get("/", async (req, res) => {
       params.push(parseInt(limit));
     }
 
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await connection.execute(query, params);
 
     // Format the data
     const formattedRows = rows.map((row) => {
@@ -67,10 +71,8 @@ router.get("/", async (req, res) => {
 
       return {
         ...row,
-        laeq1h:
-          row.laeq1h !== null && row.laeq1h !== undefined ? row.laeq1h : 0,
-        Lmax: row.Lmax !== null && row.Lmax !== undefined ? row.Lmax : 0,
-        Lmin: row.Lmin !== null && row.Lmin !== undefined ? row.Lmin : 0,
+        Lmax: row.Lmax ?? 0,
+        Lmin: row.Lmin ?? 0,
         created_at: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
       };
     });
@@ -78,7 +80,13 @@ router.get("/", async (req, res) => {
     res.status(200).json(formattedRows);
   } catch (error) {
     console.error("Error fetching LAeq lmin lmax data:", error);
-    res.status(500).json({ error: "Failed to fetch LAeq lmin lmax data" });
+    res.status(500).json({
+      error: "Failed to fetch LAeq lmin lmax data",
+      details: error.message,
+    });
+  } finally {
+    // Pastikan koneksi selalu dilepas kembali ke pool
+    if (connection) connection.release();
   }
 });
 
